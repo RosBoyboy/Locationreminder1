@@ -1,10 +1,8 @@
-const CACHE_NAME = 'reminders-pwa-cache-v1';
+const CACHE_NAME = 'reminders-pwa-cache-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
-  // You can add additional static assets here (e.g., globals.css, logos)
+  '/globe.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,3 +46,4 @@ self.addEventListener('activate', (event) => {
     })
   );
 });
+

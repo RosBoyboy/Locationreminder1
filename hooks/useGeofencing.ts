@@ -1,47 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { getDistanceInMeters } from "@/lib/haversine";
-
-export type Reminder = {
-  id: string;
-  title: string;
-  description: string;
-  radius_meters: number;
-  location: any;
-};
+import { useReminders } from "@/hooks/useReminders";
+import { Reminder } from "@/types/models";
 
 export function useGeofencing() {
+  const { data: reminders } = useReminders();
   const [currentPosition, setCurrentPosition] = useState<GeolocationPosition | null>(null);
-  const [activeReminders, setActiveReminders] = useState<Reminder[]>([]);
-  const notifiedReminders = useRef<Set<string>>(new Set());
-  const supabase = createClient();
 
-  useEffect(() => {
-    const fetchReminders = async () => {
-      const { data, error } = await supabase
-        .from("reminders")
-        .select("*")
-        .eq("is_active", true);
-        
-      if (!error && data) setActiveReminders(data);
-    };
-    fetchReminders();
-    
-    const channel = supabase
-      .channel("geofence-sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "reminders" },
-        () => {
-          fetchReminders(); 
-        }
-      )
-      .subscribe();
-      
-    return () => { supabase.removeChannel(channel); }
-  }, [supabase]);
+  // Alarms that are actively "ringing" / popping up
+  const [activeAlarms, setActiveAlarms] = useState<Reminder[]>([]);
+  // Keeps track of when an alarm was snoozed (id -> timestamp)
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+
+  const notifiedSet = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -51,51 +24,108 @@ export function useGeofencing() {
 
   const triggerNotification = useCallback((reminder: Reminder) => {
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(reminder.title, {
+      new Notification("Location Reminder: " + reminder.title, {
         body: reminder.description || "You arrived at your destination!",
-        icon: "/icon-192x192.png", 
+        icon: "/globe.svg", // Using existing icon instead of missing 192x192
       });
     }
+    // Also trigger in-app popup
+    setActiveAlarms(prev => {
+      if (prev.find(a => a.id === reminder.id)) return prev;
+      return [...prev, reminder];
+    });
   }, []);
 
-  const checkGeofences = useCallback((currentLat: number, currentLon: number) => {
-    activeReminders.forEach((reminder) => {
-      // Supabase's postGIS outputs location naturally as GeoJSON in PostgREST
-      if (!reminder.location || !reminder.location.coordinates) return;
-      
-      const [targetLon, targetLat] = reminder.location.coordinates;
+  const checkGeofences = useCallback((currentLat: number, currentLon: number, accuracy: number = 0) => {
+    if (!reminders) return;
+
+    reminders.forEach((reminder) => {
+      // Only check pending/active reminders that have a location
+      if (reminder.is_done) {
+        return;
+      }
+
+      const loc = Array.isArray(reminder.location) ? reminder.location[0] : reminder.location; if (!loc || loc.lat == null || loc.lng == null) return;
+
+      const targetLat = Number(loc.lat);
+      const targetLon = Number(loc.lng);
+      const radius = Number(loc.radius) || 100;
+
       const distance = getDistanceInMeters(currentLat, currentLon, targetLat, targetLon);
 
-      if (distance <= reminder.radius_meters) {
-        if (!notifiedReminders.current.has(reminder.id)) {
-          triggerNotification(reminder);
-          notifiedReminders.current.add(reminder.id);
+      console.log(`[Geofence] Checking reminder "` + reminder.title + `": distance = ` + distance.toFixed(1) + `m, radius = ` + radius + `m`);
+
+      // Respect user's selected radius, maybe with a small GPS accuracy margin
+      const dynamicTolerance = accuracy > 100 ? (accuracy - 100) : 0; const effectiveRadius = Math.max(radius, radius + dynamicTolerance, 50);
+
+      if (distance <= effectiveRadius) {
+        const now = Date.now();
+        const snoozeExpiry = snoozedUntil[reminder.id] || 0;
+
+        if (!notifiedSet.current.has(reminder.id)) {
+          if (now >= snoozeExpiry) {
+            triggerNotification(reminder);
+            notifiedSet.current.add(reminder.id);
+          }
         }
       } else {
-        if (notifiedReminders.current.has(reminder.id)) {
-          notifiedReminders.current.delete(reminder.id);
+        if (notifiedSet.current.has(reminder.id)) {
+          notifiedSet.current.delete(reminder.id);
         }
       }
     });
-  }, [activeReminders, triggerNotification]);
+  }, [reminders, snoozedUntil, triggerNotification]);
 
+  // Immediately re-check if new reminders are added while you are standing still
+  useEffect(() => {
+    if (currentPosition) {
+      checkGeofences(currentPosition.coords.latitude, currentPosition.coords.longitude, currentPosition.coords.accuracy);
+    }
+  }, [reminders, currentPosition, checkGeofences]);
+
+  // Main Geolocation loop
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      console.error("Geolocation is not supported by your browser");
+      console.warn("Geolocation is not supported by your browser");
       return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentPosition(position);
+        checkGeofences(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
+      },
+      (err) => console.warn("Initial location fetch failed:", err),
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 30000 }
+    );
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         setCurrentPosition(position);
-        checkGeofences(position.coords.latitude, position.coords.longitude);
+        checkGeofences(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
       },
-      (error) => console.error("Geolocation error:", error),
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      (error) => {
+        console.warn("Geolocation error:", error);
+      },
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 30000 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, [checkGeofences]);
 
-  return { currentPosition, activeReminders };
+  const snoozeAlarm = useCallback((reminderId: string, minutes: number = 15) => {
+    setSnoozedUntil(prev => ({
+      ...prev,
+      [reminderId]: Date.now() + minutes * 60 * 1000
+    }));
+    setActiveAlarms(prev => prev.filter(r => r.id !== reminderId));
+    notifiedSet.current.delete(reminderId);
+  }, []);
+
+  const dismissAlarm = useCallback((reminderId: string) => {
+    setActiveAlarms(prev => prev.filter(r => r.id !== reminderId));
+  }, []);
+
+  return { currentPosition, activeAlarms, snoozeAlarm, dismissAlarm };
 }
+

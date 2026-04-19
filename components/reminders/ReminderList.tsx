@@ -50,13 +50,13 @@ export function ReminderList() {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse bg-white rounded-xl p-4 border border-slate-100">
+          <div key={i} className="animate-pulse bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-start mb-3">
-              <div className="h-5 bg-slate-200 rounded w-1/2"></div>
-              <div className="h-5 bg-slate-200 rounded w-16"></div>
+              <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+              <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
             </div>
-            <div className="h-4 bg-slate-100 rounded w-full mb-2"></div>
-            <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full mb-2"></div>
+            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-3/4"></div>
           </div>
         ))}
       </div>
@@ -65,8 +65,8 @@ export function ReminderList() {
 
   if (reminders.length === 0) {
     return (
-      <div className="text-center text-sm text-slate-400 flex flex-col items-center gap-3 p-8 border-2 border-dashed border-slate-200 rounded-2xl bg-white shadow-sm">
-        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-indigo-400 mb-2">
+      <div className="text-center text-sm text-slate-400 flex flex-col items-center gap-3 p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
+        <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-indigo-400 mb-2">
           <MapPin size={24} />
         </div>
         <p className="max-w-[200px] leading-relaxed">No triggers active. Drop a pin on the map to set one.</p>
@@ -82,30 +82,30 @@ export function ReminderList() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
           key={r.id} 
-          className="group flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all p-4 relative overflow-hidden"
+          className="group flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all p-4 relative overflow-hidden"
         >
           {/* subtle left colored border indicator */}
-          <div className={`absolute left-0 top-0 bottom-0 w-1 ${r.is_active ? 'bg-indigo-500' : 'bg-slate-300'}`}></div>
+          <div className={`absolute left-0 top-0 bottom-0 w-1 ${r.is_active ? 'bg-indigo-500 hover:bg-indigo-600 text-white' : 'bg-slate-300'}`}></div>
           
           <div className="flex justify-between items-start pl-2">
             <div className="flex-1 min-w-0 pr-3">
-              <h3 className="font-semibold text-slate-800 text-[15px] truncate">{r.title}</h3>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-[15px] truncate">{r.title}</h3>
               {r.description && (
-                 <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{r.description}</p>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">{r.description}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${r.is_active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${r.is_active ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                 {r.is_active ? "Active" : "Done"}
               </span>
-              <button className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button className="text-slate-400 hover:text-slate-600 dark:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreVertical size={16} />
               </button>
             </div>
           </div>
           
-          <div className="mt-4 pt-3 border-t border-slate-50/50 flex items-center justify-between text-xs text-slate-500 pl-2">
-             <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+          <div className="mt-4 pt-3 border-t border-slate-50/50 dark:border-slate-700/50 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pl-2">
+             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-800">
                <Navigation size={12} className="text-slate-400" />
                <span>{r.radius_meters}m radius</span>
              </div>
@@ -119,3 +119,4 @@ export function ReminderList() {
     </div>
   );
 }
+
