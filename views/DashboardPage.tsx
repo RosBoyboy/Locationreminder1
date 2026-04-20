@@ -50,7 +50,7 @@ export default function DashboardPage() {
   const mapZoom = mapMarkers.length > 0 ? 12 : 5;
 
   return (
-    <div className="max-w-[1300px] mx-auto w-full space-y-10">
+    <div className="w-full flex-1 space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-bold text-slate-800 dark:text-slate-200 tracking-tight flex items-center gap-2">

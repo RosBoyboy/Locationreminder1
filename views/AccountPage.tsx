@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Shield, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Mail, Shield, Save, Loader2, CheckCircle2, AlertCircle, Key } from 'lucide-react';
 import { authService } from '@/services/authService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -10,7 +10,9 @@ export default function AccountPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
+    currentPassword: '',
     password: '',
     confirmPassword: ''
   });
@@ -18,7 +20,11 @@ export default function AccountPage() {
   useEffect(() => {
     authService.getCurrentUser().then(u => {
       setUser(u);
-      setFormData(prev => ({ ...prev, email: u?.email || '' }));
+      setFormData(prev => ({ 
+        ...prev, 
+        email: u?.email || '',
+        fullName: u?.user_metadata?.full_name || ''
+      }));
       setLoading(false);
     });
   }, []);
@@ -40,24 +46,30 @@ export default function AccountPage() {
     try {
       const updates: any = {};
       if (formData.email !== user?.email) updates.email = formData.email;
-      if (formData.password) updates.password = formData.password;
+      if (formData.fullName !== user?.user_metadata?.full_name) {
+        updates.data = { full_name: formData.fullName };
+      }
 
-      // Update auth service (if implemented, else simulation)
+      if (formData.password) {
+        if (!formData.currentPassword) {
+          setErrorMsg("Please enter your current password to set a new one.");
+          setSavingStatus('error');
+          return;
+        }
+        await authService.verifyPassword(formData.currentPassword);
+        updates.password = formData.password;
+      } else if (formData.email !== user?.email) {
+        // Might require password to change email too, depending on security needs, but sticking to basic requirements
+      }
+
       if (Object.keys(updates).length > 0) {
-         // Because supabase auth update needs client directly, assuming authService has something
-         // Typically authService.supabase.auth.updateUser(updates)
-         // Assuming user has update profile endpoint or we just simulate for now
-         // For real implementation:
-         // const { error } = await supabase.auth.updateUser(updates);
-         // if (error) throw error;
-         
-         // Mocking a network request for update
-         await new Promise(r => setTimeout(r, 800));
+        const updatedUser = await authService.updateUser(updates);
+        setUser(updatedUser);
       }
       
       setSavingStatus('saved');
       setTimeout(() => setSavingStatus('idle'), 3000);
-      setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+      setFormData(prev => ({ ...prev, currentPassword: '', password: '', confirmPassword: '' }));
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to update account");
       setSavingStatus('error');
@@ -69,7 +81,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-[700px] mx-auto w-full space-y-6 pb-20">
+    <div className="w-full flex-1 space-y-6 pb-20">
       <div className="mb-8">
         <h1 className="text-[28px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Account Settings</h1>
         <p className="text-[14px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Update your email and password</p>
@@ -87,6 +99,21 @@ export default function AccountPage() {
 
           <div>
             <label className="flex items-center gap-2 text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-2">
+              <User size={16} className="text-slate-400" />
+              Full Name
+            </label>
+            <input 
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none text-[14px] mb-6"
+              placeholder="Your full name"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-2">
               <Mail size={16} className="text-slate-400" />
               Email Address
             </label>
@@ -98,7 +125,20 @@ export default function AccountPage() {
               className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none text-[14px]"
               placeholder="Your email address"
             />
-            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-2 font-medium">Changing your email may require verification.</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-2 font-medium mb-6">Changing your email may require verification.</p>
+
+            <label className="flex items-center gap-2 text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-2">
+              <Key size={16} className="text-slate-400" />
+              Current Password
+            </label>
+            <input 
+              type="password"
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none text-[14px] mb-4"
+              placeholder="Enter current password to set a new one"
+            />
           </div>
 
           <div className="h-px bg-slate-100 dark:bg-slate-800 my-6"></div>

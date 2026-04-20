@@ -88,7 +88,7 @@ export default function CategoriesPage() {
     const reminders = (selectedCategory.reminders || []).filter((r: any) => !r.deleted_at);
     
     return (
-      <div className="max-w-325 mx-auto w-full space-y-6">
+      <div className="w-full flex-1 space-y-6">
          <button onClick={() => setSelectedCategoryId(null)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors font-medium mb-2 text-[14px]">
            <ChevronLeft size={16} /> Back to Categories
          </button>
@@ -177,7 +177,7 @@ export default function CategoriesPage() {
     );
   }
   return (
-    <div className="max-w-325 mx-auto w-full space-y-6">
+    <div className="w-full flex-1 space-y-6">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-[28px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Categories</h1>

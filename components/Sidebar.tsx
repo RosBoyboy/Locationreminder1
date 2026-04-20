@@ -1,17 +1,37 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { LayoutDashboard, Bell, Map as MapIcon, Tag, MapPin, Plus, Settings, X } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
+import { useReminders } from "@/hooks/useReminders";
 
-const NAV_ITEMS = [
+type NavItem = {
+  icon: React.ReactNode;
+  label: string;
+  id: string;
+  badge?: number;
+};
+
+const NAV_ITEMS_BASE: NavItem[] = [
   { icon: <LayoutDashboard size={18} />, label: "Dashboard", id: "dashboard" },
-  { icon: <Bell size={18} />, label: "Reminders", id: "reminders", badge: 4 },
+  { icon: <Bell size={18} />, label: "Reminders", id: "reminders" },
   { icon: <MapIcon size={18} />, label: "Map View", id: "map" },
   { icon: <Tag size={18} />, label: "Categories", id: "categories" },
 ];
 
 export default function Sidebar() {
   const { activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen, setIsReminderModalOpen } = useAppContext();
+  const { data: reminders = [] } = useReminders();
+
+  const activeRemindersCount = useMemo(() => {
+    return reminders.filter(r => !r.is_done && !r.deleted_at).length;
+  }, [reminders]);
+
+  const NAV_ITEMS = NAV_ITEMS_BASE.map(item => {
+    if (item.id === "reminders") {
+      return { ...item, badge: activeRemindersCount > 0 ? activeRemindersCount : undefined };
+    }
+    return item;
+  });
 
   return (
     <aside className={`fixed md:static inset-y-0 left-0 w-[260px] bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col flex-shrink-0 z-40 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>

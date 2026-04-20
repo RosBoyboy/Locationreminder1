@@ -775,7 +775,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-slate-100 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-400">© 2025 GeoRemind. All rights reserved.</p>
+            <p className="text-sm text-slate-400">© 2026 GeoRemind. All rights reserved.</p>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
               All systems operational

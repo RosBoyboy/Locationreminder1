@@ -73,7 +73,7 @@ export default function RemindersPage() {
   if (isError) return <div className="flex justify-center p-20 text-rose-500 font-bold">Failed to load reminders. </div>;
 
   return (
-    <div className="max-w-[760px] mx-auto w-full space-y-6 pb-20">
+    <div className="w-full flex-1 space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <div>
           <h1 className="text-[28px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Reminders</h1>

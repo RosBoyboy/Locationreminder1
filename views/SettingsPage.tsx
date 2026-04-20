@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Bell, Moon, Save, ChevronRight, Smartphone, Globe, Shield, Loader2, CheckCircle2, Settings as SettingsIcon, Archive, ArchiveRestore, Trash2, Search, Filter, Clock } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { User } from '@supabase/supabase-js';
@@ -18,6 +18,7 @@ const Toggle = ({ active, onChange }: { active: boolean, onChange: () => void })
 );
 
 export default function SettingsPage() {
+  const { setActiveTab } = useAppContext();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +60,7 @@ export default function SettingsPage() {
   };
   
   const queryClient = useQueryClient();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   // For hydration mismatch fixes with next-themes
   const [mounted, setMounted] = useState(false);
 
@@ -98,6 +99,12 @@ export default function SettingsPage() {
       // But we already do it in getCurrentUser.
     }
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      setSettings(prev => ({ ...prev, darkMode: theme === 'dark' || resolvedTheme === 'dark' }));
+    }
+  }, [theme, mounted]);
 
   const { data: ALL_REMINDERS } = useReminders();
 
@@ -158,8 +165,10 @@ export default function SettingsPage() {
     (r.location?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (!mounted) return null;
+
   return (
-    <div className="max-w-[1000px] mx-auto w-full space-y-6 pb-20">
+    <div className="w-full flex-1 space-y-6 pb-20">
       <div className="mb-8">
         <h1 className="text-[28px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Settings</h1>
         <p className="text-[14px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage your preferences and account</p>
@@ -292,12 +301,12 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              {[
-                { label: 'Edit Profile', action: () => {}, disabled: true, tooltip: 'Coming soon' },
-                { label: 'Change Password', action: () => {}, disabled: true, tooltip: 'Coming soon' },
+              {([
+                { label: 'Edit Profile', action: () => setActiveTab('account') },
+                { label: 'Change Password', action: () => setActiveTab('account') },
                 { label: 'Privacy Policy', action: () => {} },
                 { label: 'Terms of Service', action: () => {} }
-              ].map((item, i) => (
+              ] as { label: string; action: () => void; disabled?: boolean; tooltip?: string }[]).map((item, i) => (
                 <button key={i} onClick={item.disabled ? undefined : item.action} disabled={item.disabled} title={item.tooltip} className={"w-full flex items-center justify-between py-2 text-[13px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 group dark:hover:text-slate-200" + (item.disabled ? " opacity-50 cursor-not-allowed" : "")}>    
                   {item.label}
                   <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400" />
@@ -404,7 +413,7 @@ export default function SettingsPage() {
                     <div className="pl-3">
                        <div className="flex items-center gap-3 mb-1.5">
                          <div className={`${getCategoryColorClasses(r.category?.color)} w-8 h-8 rounded-lg flex items-center justify-center`}>
-                           {r.category?.icon || '📌'}
+                           {r.category?.icon || '??'}
                          </div>
                          <h3 className="font-bold text-[15px] text-slate-800 dark:text-slate-200">{r.title}</h3>
                        </div>
@@ -447,3 +456,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

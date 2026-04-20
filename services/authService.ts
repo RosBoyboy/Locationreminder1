@@ -42,6 +42,25 @@ export const authService = {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+  },
+
+  async verifyPassword(password: string) {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email) throw new Error("No user email to verify password");
+    const { error } = await supabase.auth.signInWithPassword({
+        email: session.user.email,
+        password
+    });
+    if (error) throw new Error("Incorrect current password.");
+    return true;
+  },
+
+  async updateUser(updates: any) {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.updateUser(updates);
+    if (error) throw error;
+    return data.user;
   }
 };
 
