@@ -1,24 +1,42 @@
-const CACHE_NAME = 'reminders-pwa-cache-v2';
+const CACHE_NAME = 'reminders-pwa-cache-v3';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/globe.svg'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => Promise.all(
+      cacheNames.map((name) => {
+        if (name !== CACHE_NAME) return caches.delete(name);
       })
+    ))
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('supabase.co')) {
+  // Only process GET requests; allow network to handle everything else directly
+  if (event.request.method !== 'GET') return;
+
+  // Let browser natively handle cross-origin APIs & RSC fetches
+  const url = new URL(event.request.url);
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.protocol.startsWith('chrome-extension') ||
+    event.request.headers.get('RSC') === '1'
+  ) {
     return;
   }
 
+  // Use Network-First for HTML Document navigations
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match('/'))
@@ -26,35 +44,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-First with Cache Fallback for everything else
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
+    fetch(event.request)
+      .then((networkResponse) => {
+        // Clone response to cache it
+        if (networkResponse.ok && networkResponse.type === 'basic') {
+          const resClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
         }
-        return fetch(event.request).catch(() => {
-            // Optional: fallback page for offline mode when request fails
-            if (event.request.mode === 'navigate') {
-                return caches.match('/');
-            }
-        });
+        return networkResponse;
       })
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+      .catch(() => caches.match(event.request))
   );
 });
 
