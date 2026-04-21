@@ -24,6 +24,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [showSavedData, setShowSavedData] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const settingsKey = React.useMemo(
+    () => user ? `georemind_settings_${user.id}` : 'georemind_settings_guest',
+    [user]
+  );
   
   // Custom Tab Navigation
   const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'archive'>('general');
@@ -79,26 +83,24 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Load User
     authService.getCurrentUser().then(u => {
       setUser(u);
       setLoading(false);
     });
+  }, []);
 
-    // Load Settings
-    const saved = localStorage.getItem('georemind_settings');
+  useEffect(() => {
+    if (!mounted) return;
+    const saved = localStorage.getItem(settingsKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         setSettings(parsed);
       } catch (e) {
-         console.warn(e)
+        console.warn(e);
       }
-    } else {
-      // If no saved settings, just make sure we stop loading eventually
-      // But we already do it in getCurrentUser.
     }
-  }, []);
+  }, [mounted, settingsKey]);
 
   useEffect(() => {
     if (mounted) {
@@ -121,7 +123,7 @@ export default function SettingsPage() {
   const handleSave = () => {
     setSaving(true);
     setTimeout(() => {
-      localStorage.setItem('georemind_settings', JSON.stringify(settings));
+      localStorage.setItem(settingsKey, JSON.stringify(settings));
       setSaving(false);
       setShowSavedData(true);
       setTimeout(() => setShowSavedData(false), 3000);

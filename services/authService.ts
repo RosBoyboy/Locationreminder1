@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
+export const CURRENT_USER_KEY = 'georemind_current_user';
+
 export function isInvalidRefreshTokenError(error: any) {
   return typeof error?.message === 'string' && (
     error.message.toLowerCase().includes('invalid refresh token') ||
@@ -9,9 +11,20 @@ export function isInvalidRefreshTokenError(error: any) {
   );
 }
 
+export function setCurrentUserId(userId: string) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(CURRENT_USER_KEY, userId);
+}
+
+export function clearCurrentUserId() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(CURRENT_USER_KEY);
+}
+
 export async function clearStaleAuthSession() {
   const supabase = createClient();
   await supabase.auth.signOut().catch(() => {});
+  clearCurrentUserId();
 
   if (typeof window !== 'undefined') {
     try {
@@ -31,6 +44,8 @@ export const authService = {
       options: { data: { full_name: fullName } }
     });
     if (error) throw error;
+    const userId = data?.user?.id || data?.session?.user?.id;
+    if (userId) setCurrentUserId(userId);
     return data;
   },
 
@@ -38,6 +53,8 @@ export const authService = {
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    const userId = data?.user?.id || data?.session?.user?.id;
+    if (userId) setCurrentUserId(userId);
     return data;
   },
 
@@ -66,6 +83,7 @@ export const authService = {
   async signOut(): Promise<void> {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
+    clearCurrentUserId();
     if (error) throw error;
   },
 
