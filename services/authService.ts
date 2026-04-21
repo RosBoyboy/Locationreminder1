@@ -2,8 +2,24 @@ import { createClient } from '@/utils/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
 export function isInvalidRefreshTokenError(error: any) {
-  return typeof error?.message === 'string'
-    && error.message.toLowerCase().includes('invalid refresh token');
+  return typeof error?.message === 'string' && (
+    error.message.toLowerCase().includes('invalid refresh token') ||
+    error.message.toLowerCase().includes('refresh token not found') ||
+    error.message.toLowerCase().includes('refresh token')
+  );
+}
+
+export async function clearStaleAuthSession() {
+  const supabase = createClient();
+  await supabase.auth.signOut().catch(() => {});
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.removeItem('supabase.auth.token');
+    } catch {
+      // ignore storage cleanup failures
+    }
+  }
 }
 
 export const authService = {
@@ -30,7 +46,7 @@ export const authService = {
     const { data: { session }, error } = await supabase.auth.getSession();      
     if (error) {
       if (isInvalidRefreshTokenError(error)) {
-        await supabase.auth.signOut().catch(() => {});
+        await clearStaleAuthSession();
         return null;
       }
       console.error('Error fetching session:', error.message);

@@ -17,7 +17,7 @@ import { useGeofencing } from '@/hooks/useGeofencing';
 
 function DashboardContent() {
   const { activeTab, isSidebarOpen, setIsSidebarOpen, isReminderModalOpen, setIsReminderModalOpen } = useAppContext();
-  const { activeAlarms, snoozeAlarm, dismissAlarm } = useGeofencing();
+  const { activeAlarms, snoozeAlarm, dismissAlarm, geoStatus } = useGeofencing();
 
   return (
     <div className="flex h-screen bg-[#fcfcff] dark:bg-slate-950 overflow-hidden font-sans text-slate-800 dark:text-slate-200">
@@ -37,6 +37,12 @@ function DashboardContent() {
 
       <main className="flex-1 flex flex-col min-w-0 relative h-screen overflow-hidden">
         <Topbar activeAlarms={activeAlarms} dismissAlarm={dismissAlarm} />
+
+        {geoStatus && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 text-sm text-center">
+            {geoStatus}
+          </div>
+        )}
 
         {activeTab !== "map" && (
           <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-10 pb-32">

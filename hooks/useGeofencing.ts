@@ -8,6 +8,7 @@ import { Reminder } from "@/types/models";
 export function useGeofencing() {
   const { data: reminders } = useReminders();
   const [currentPosition, setCurrentPosition] = useState<GeolocationPosition | null>(null);
+  const [geoStatus, setGeoStatus] = useState<string | null>(null);
 
   // Alarms that are actively "ringing" / popping up
   const [activeAlarms, setActiveAlarms] = useState<Reminder[]>([]);
@@ -15,11 +16,30 @@ export function useGeofencing() {
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
   const notifiedSet = useRef<Set<string>>(new Set());
+  const watchIdRef = useRef<number | null>(null);
+  const fallbackIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+  }, []);
+
+  const handleGeoError = useCallback((error: GeolocationPositionError) => {
+    let message = "Unable to get your current location.";
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        message = "Location permission denied. Please allow location access for this app.";
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = "Location unavailable. Try moving to a more open area.";
+        break;
+      case error.TIMEOUT:
+        message = "Location request timed out. Please try again.";
+        break;
+    }
+    setGeoStatus(message);
+    console.warn("Geolocation error:", error);
   }, []);
 
   const triggerNotification = useCallback((reminder: Reminder) => {
@@ -86,32 +106,47 @@ export function useGeofencing() {
   // Main Geolocation loop
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      console.warn("Geolocation is not supported by your browser");
+      setGeoStatus("Geolocation is not supported by your browser.");
       return;
     }
 
+    setGeoStatus(null);
+
+    const handlePosition = (position: GeolocationPosition) => {
+      setGeoStatus(null);
+      setCurrentPosition(position);
+      checkGeofences(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCurrentPosition(position);
-        checkGeofences(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
-      },
-      (err) => console.warn("Initial location fetch failed:", err),
-      { enableHighAccuracy: false, maximumAge: 60000, timeout: 30000 }
+      handlePosition,
+      handleGeoError,
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
     );
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setCurrentPosition(position);
-        checkGeofences(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
-      },
-      (error) => {
-        console.warn("Geolocation error:", error);
-      },
-      { enableHighAccuracy: false, maximumAge: 60000, timeout: 30000 }
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      handlePosition,
+      handleGeoError,
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 }
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [checkGeofences]);
+    fallbackIntervalRef.current = window.setInterval(() => {
+      navigator.geolocation.getCurrentPosition(handlePosition, handleGeoError, {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000,
+      });
+    }, 15000);
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      if (fallbackIntervalRef.current !== null) {
+        clearInterval(fallbackIntervalRef.current);
+      }
+    };
+  }, [checkGeofences, handleGeoError]);
 
   const snoozeAlarm = useCallback((reminderId: string, minutes: number = 15) => {
     setSnoozedUntil(prev => ({
@@ -126,6 +161,6 @@ export function useGeofencing() {
     setActiveAlarms(prev => prev.filter(r => r.id !== reminderId));
   }, []);
 
-  return { currentPosition, activeAlarms, snoozeAlarm, dismissAlarm };
+  return { currentPosition, activeAlarms, snoozeAlarm, dismissAlarm, geoStatus };
 }
 
