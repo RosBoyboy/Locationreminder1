@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-bold text-slate-800 dark:text-slate-200 tracking-tight flex items-center gap-2">
-            Good morning, {userName.charAt(0).toUpperCase() + userName.slice(1)}! <span className="transform origin-bottom-right hover:rotate-12 transition-transform duration-300">👋</span>
+            Good Day, {userName.charAt(0).toUpperCase() + userName.slice(1)}! <span className="transform origin-bottom-right hover:rotate-12 transition-transform duration-300">👋</span>
           </h1>
           <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1 font-medium">You have {pending + active} pending reminders today</p>
         </div>
