@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
-function isInvalidRefreshTokenError(error: any) {
+export function isInvalidRefreshTokenError(error: any) {
   return typeof error?.message === 'string'
     && error.message.toLowerCase().includes('invalid refresh token');
 }

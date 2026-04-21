@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
-import { authService } from "@/services/authService";
+import { authService, isInvalidRefreshTokenError } from "@/services/authService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [sessionWarning, setSessionWarning] = useState("");
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -28,7 +31,11 @@ export default function LoginPage() {
         if (user) router.push("/dashboard");
       })
       .catch((error) => {
-        console.error("Auth check failed:", error);
+        if (isInvalidRefreshTokenError(error)) {
+          setSessionWarning("Your previous session has expired. Please sign in again.");
+        } else {
+          console.error("Auth check failed:", error);
+        }
       });
   }, [router]);
 
@@ -128,6 +135,11 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {sessionWarning && (
+             <div className="mb-4 p-3 bg-yellow-50 text-yellow-700 rounded-xl text-sm font-medium border border-yellow-100">
+               {sessionWarning}
+             </div>
+          )}
           {errorMsg && (
              <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
                {errorMsg}
