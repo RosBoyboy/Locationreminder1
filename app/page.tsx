@@ -8,6 +8,7 @@ import {
   Navigation, Map, Tag, CheckCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import PwaInstallButton from '@/components/PwaInstallButton';
 
 const FEATURES = [
   {
@@ -732,12 +733,7 @@ export default function LandingPage() {
               >
                 Get started for free <ArrowRight size={16} />
               </button>
-              <button
-                onClick={goToLogin}
-                className="inline-flex items-center gap-2 bg-white/10 text-white font-semibold px-8 py-3.5 rounded-2xl border border-white/20 hover:bg-white/20 transition-all text-sm"
-              >
-                <Smartphone size={16} /> Install PWA
-              </button>
+              <PwaInstallButton className="inline-flex items-center gap-2 bg-white/10 text-white font-semibold px-8 py-3.5 rounded-2xl border border-white/20 hover:bg-white/20 transition-all text-sm" />
             </div>
           </div>
         </motion.div>
