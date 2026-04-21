@@ -1,6 +1,11 @@
 import { createClient } from '@/utils/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
+function isInvalidRefreshTokenError(error: any) {
+  return typeof error?.message === 'string'
+    && error.message.toLowerCase().includes('invalid refresh token');
+}
+
 export const authService = {
   async signUpWithEmail(email: string, password: string, fullName?: string) {
     const supabase = createClient();
@@ -24,6 +29,10 @@ export const authService = {
     const supabase = createClient();
     const { data: { session }, error } = await supabase.auth.getSession();      
     if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        await supabase.auth.signOut().catch(() => {});
+        return null;
+      }
       console.error('Error fetching session:', error.message);
       throw new Error(error.message);
     }

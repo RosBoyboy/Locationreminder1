@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BellRing, Check, Clock, MapPin, X, Navigation, Calendar, ChevronRight } from 'lucide-react';
 import { Reminder } from '@/types/models';
-import { useGeofencing } from '@/hooks/useGeofencing';
 import { useUpdateReminder, useReminders } from '@/hooks/useReminders';
 import { useAppContext } from '@/context/AppContext';
 import LocationMap from '@/components/map/LocationMap';
@@ -27,8 +26,7 @@ const categoryColors: Record<string, { bg: string, bgSoft: string, text: string,
   sky: { bg: 'bg-sky-500', bgSoft: 'bg-sky-50', text: 'text-sky-500', textDark: 'text-sky-600', border: 'border-sky-500' },
 };
 
-export default function ActiveReminderModal() {
-  const { activeAlarms, snoozeAlarm, dismissAlarm } = useGeofencing();
+export default function ActiveReminderModal({ activeAlarms, snoozeAlarm, dismissAlarm }: { activeAlarms: Reminder[]; snoozeAlarm: (reminderId: string, minutes?: number) => void; dismissAlarm: (reminderId: string) => void; }) {
   const { expandedAlarmId, setExpandedAlarmId } = useAppContext();
   const { mutate: updateReminder } = useUpdateReminder();
   const { data: allReminders = [] } = useReminders();

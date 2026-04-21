@@ -23,9 +23,13 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    authService.getCurrentUser().then((user) => {
-      if (user) router.push("/dashboard");
-    });
+    authService.getCurrentUser()
+      .then((user) => {
+        if (user) router.push("/dashboard");
+      })
+      .catch((error) => {
+        console.error("Auth check failed:", error);
+      });
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {

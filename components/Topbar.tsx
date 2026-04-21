@@ -6,18 +6,17 @@ import { useAppContext } from "@/context/AppContext";
 import { authService } from "@/services/authService";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { useGeofencing } from "@/hooks/useGeofencing";
 import { useReminders } from "@/hooks/useReminders";
 import { useQueryClient } from "@tanstack/react-query";
+import { Reminder } from "@/types/models";
 
-export default function Topbar() {
+export default function Topbar({ activeAlarms, dismissAlarm }: { activeAlarms: Reminder[]; dismissAlarm: (id: string) => void; }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setActiveTab, setIsSidebarOpen, setExpandedAlarmId, setMapCenterFocus } = useAppContext();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);    
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);        
   const [user, setUser] = useState<User | null>(null);
-  const { activeAlarms, dismissAlarm } = useGeofencing();
   const { data: allReminders } = useReminders();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
